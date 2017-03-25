@@ -1,2 +1,2 @@
 # Sentiment-Analysis-Project
-Sentimental classification of tweets
+Simple feature extraction from tweet samples and classification using an MLP 
