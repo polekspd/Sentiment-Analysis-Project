@@ -1,6 +1,8 @@
 import re
 import csv
-from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 def Dictionary():
         d={}
         with open("affective_lexicon.tsv","r",encoding="utf8") as f:
@@ -65,9 +67,13 @@ def extract_tweet_sentiments(fname): #we return whichever features we want
         i = 0
         with open(f_name) as f:
             for line in f:
-                list[i].append(len(re.findall(pattern0, line))/len(tweet_words[i]))
-                list[i].append(len(re.findall(pattern1, line))/len(tweet_words[i]))
-                list[i].append(len(re.findall(pattern2, line))/len(tweet_words[i]))
+                if(len(re.findall(pattern0, line)) != 0) :
+                    list[i].append(len(re.findall(pattern0, line))/len(tweet_words[i]))
+                if(len(re.findall(pattern0, line)) != 0) :
+                    list[i].append(len(re.findall(pattern0, line))/len(tweet_words[i]))
+                if(len(re.findall(pattern0, line)) != 0) :
+                    list[i].append(len(re.findall(pattern0, line))/len(tweet_words[i]))
+
                 i+=1 # number of lines
         #print(list)
         return list
@@ -185,12 +191,8 @@ def extract_tweet_sentiments(fname): #we return whichever features we want
             tweet_statistics[i].append(mean(tweet_word_sentiments[i]))# mean
             tweet_statistics[i].append(min(list(map(float,tweet_word_sentiments[i]))))# min
             tweet_statistics[i].append(max((list(map(float,tweet_word_sentiments[i])))))# max
-            tweet_statistics[i].extend((tweet_mentions[i],tweet_urls[i],tweet_reps[i],tweet_punct[i],tweet_hashes[i],tweet_reps[i]))
+            tweet_statistics[i].extend((tweet_reps[i],tweet_punct[i],tweet_upper[i]))
     return tweet_statistics
-
-
-
-
 
 
 ##############################################################
@@ -207,10 +209,31 @@ def target(fname):
     return target_data
 
 tweet_statistics = extract_tweet_sentiments("train.txt")
-print(tweet_statistics)
 test_statistics = extract_tweet_sentiments("test.txt")
-target_data = target("train.sen")
-#print(target_data)
-clf = svm.SVC(kernel='linear')
-clf.fit(tweet_statistics[:-1], target_data[:-1])
-print(clf.predict(test_statistics[1:10]))
+train_labels = target("train.sen")
+test_labels = target("test.sen")
+scaler = StandardScaler()
+scaler.fit(tweet_statistics)
+X_train = scaler.transform(tweet_statistics)
+scaler.fit(test_statistics)
+X_test = scaler.transform(test_statistics)
+
+clf = MLPClassifier(solver='adam', alpha=1e-5, random_state=1)
+clf.fit(X_train, train_labels)
+
+results = (clf.predict(X_test))
+error = 0
+f = open("results.txt","w")
+
+for i in range(0,len(results)):
+    if results[i] == test_labels[i] :
+        f.write(results[i] + '\n')
+        print(results[i] + '\n')
+        continue
+    else:
+        f.write(results[i] + '\n')
+        print(results[i] + '\n')
+        error += 1
+
+success_rate =1 - error/len(test_labels)
+print(success_rate)
